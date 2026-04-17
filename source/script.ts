@@ -1,30 +1,28 @@
-import type { ServerInfo } from "./services/global.types";
+import { db } from "./database/client";
+import { eq } from "drizzle-orm";
 
-import { getGamesave } from "./services/gamesave/getGamesave";
-import { db } from "./config/firebase";
+import { accountsTable, playersTable, serversTable } from "./database/schema";
 
 const main = async (): Promise<void> => {
-  const tokenRef = db.collection("accounts");
-  const accountsSnapshot = await tokenRef.get();
+  const accounts = await db.select().from(accountsTable);
 
-  await Promise.all(
-    accountsSnapshot.docs.map(async (doc) => {
-      const serverRef = doc.ref.collection("servers");
-      const serversSnapshot = await serverRef.get();
+  for (const account of accounts) {
+    const servers = await db
+      .select()
+      .from(serversTable)
+      .where(eq(serversTable.guild, account.guild));
 
-      const { token } = doc.data() as { token: string };
+    console.log(servers);
 
-      await Promise.all(
-        serversSnapshot.docs.map(async (serverDoc) => {
-          const { server_info } = serverDoc.data() as {
-            server_info: ServerInfo;
-          };
+    for (const server of servers) {
+      const players = await db
+        .select()
+        .from(playersTable)
+        .where(eq(playersTable.serverId, server.id));
 
-          await getGamesave({ server_info, token });
-        }),
-      );
-    }),
-  );
+      console.log(players);
+    }
+  }
 };
 
 main();
