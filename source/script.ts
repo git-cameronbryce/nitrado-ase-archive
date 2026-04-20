@@ -1,7 +1,9 @@
 import { db } from "./database/client";
 import { eq } from "drizzle-orm";
+import axios from "axios";
 
 import { accountsTable, playersTable, serversTable } from "./database/schema";
+import { getServers } from "./services/servers/getServers";
 
 const main = async (): Promise<void> => {
   const accounts = await db.select().from(accountsTable);
@@ -12,16 +14,16 @@ const main = async (): Promise<void> => {
       .from(serversTable)
       .where(eq(serversTable.guild, account.guild));
 
-    console.log(servers);
+    await Promise.all(
+      servers.map(async (server) => {
+        const client = axios.create({
+          baseURL: "https://api.nitrado.net",
+          headers: { Authorization: `Bearer ${account.token}` },
+        });
 
-    for (const server of servers) {
-      const players = await db
-        .select()
-        .from(playersTable)
-        .where(eq(playersTable.serverId, server.id));
-
-      console.log(players);
-    }
+        await getServers(client, server);
+      }),
+    );
   }
 };
 
