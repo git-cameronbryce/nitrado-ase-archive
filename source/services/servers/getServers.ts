@@ -1,8 +1,9 @@
-import { serversTable } from "../../database/schema";
+import { downloadFileServer } from "./process/download";
 import { copyFileServer } from "./process/copy";
-import type { AxiosInstance } from "axios";
+import { serversTable } from "../../database/schema";
 
 import type { Entries } from "./types";
+import type { AxiosInstance } from "axios";
 import type { InferSelectModel } from "drizzle-orm";
 type Server = InferSelectModel<typeof serversTable>;
 
@@ -21,15 +22,13 @@ export const getServers = async (
 
   const entries = data.data.entries
     .sort((a, b) => b.modified_at - a.modified_at)
-    .filter((entry) => entry.path.endsWith(".ark.gz"))
+    .filter((entry) => entry.name.endsWith(".ark.gz"))
     .slice(0, 5);
 
-  for (const entry of entries) {
-    await copyFileServer(client, server, entry);
-  }
-
-  // await copyFileServer(client, server, mapped);
-
-  // console.log(data.data.entries);
-  // console.log(Math.floor(Date.now() / 1000));
+  await Promise.all(
+    entries.map(async (entry) => {
+      await copyFileServer(client, server, entry);
+      await downloadFileServer(client, server, entry);
+    }),
+  );
 };
