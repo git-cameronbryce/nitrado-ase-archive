@@ -4,13 +4,13 @@ type Server = InferSelectModel<typeof serversTable>;
 
 import { AxiosInstance } from "axios";
 import { Entries } from "../types";
+import { copyEntries } from "./process/copy";
+import { downloadEntries } from "./process/download";
 
 export const getFiles = async (
   client: AxiosInstance,
   server: Pick<Server, "id" | "path">,
 ) => {
-  console.log(server.path);
-
   const dirs = (path: string) => ({
     saves: `${path}ShooterGame/Saved/SavedArks`,
     logs: `${path}ShooterGame/Saved/Logs`,
@@ -18,8 +18,6 @@ export const getFiles = async (
 
   await Promise.all(
     Object.entries(dirs(server.path!)).map(async ([type, dir]) => {
-      console.log(type, dir);
-
       const { data } = await client.get<Entries>(
         `/services/${server.id}/gameservers/file_server/list`,
         {
@@ -41,7 +39,27 @@ export const getFiles = async (
 
       const entries = [...saves, ...logs];
 
-      console.log(type, entries);
+      for (const entry of entries) {
+        if (entry.path.endsWith(".ark") || entry.path.endsWith(".gz")) {
+          await copyEntries(client, server, entry);
+          await downloadEntries(client, server, entry);
+        }
+
+        return;
+        const params = {
+          file: entry.path,
+        };
+
+        const { data } = await client.get(
+          `/services/${server.id}/gameservers/file_server/download`,
+          { params },
+        );
+
+        await client.post(process.env.WORKER_URL!, {
+          url: data.data.token.url,
+          key: `logfiles/${server.id}/${entry.name}`,
+        });
+      }
     }),
   );
 };
