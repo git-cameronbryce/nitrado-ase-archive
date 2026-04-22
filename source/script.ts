@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import axios from "axios";
 
 import Bottleneck from "bottleneck";
-import { getFiles } from "./services/getFile";
+import { getFiles } from "./services/servers/getFiles";
 import { getPlayers } from "./services/players/getPlayers";
 import { accountsTable, serversTable } from "./database/schema";
 
