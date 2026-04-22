@@ -2,7 +2,7 @@ import { serversTable } from "../../../database/schema";
 
 import type { InferSelectModel } from "drizzle-orm";
 import type { AxiosInstance } from "axios";
-import type { Entries } from "../types";
+import type { Entries } from "../../../types";
 
 type Server = InferSelectModel<typeof serversTable>;
 type Entry = Entries["data"]["entries"][number];
@@ -25,7 +25,7 @@ export const downloadFileServer = async (
 
   await client.post(process.env.WORKER_URL!, {
     url: data.data.token.url,
-    key: `savegame/backups/${server.id}/${file}`,
+    key: `backups/${server.id}/${file}`,
   });
 
   await client.delete(`/services/${server.id}/gameservers/file_server/delete`, {
