@@ -1,4 +1,10 @@
-import { boolean, integer, pgTable, text } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 export const accountsTable = pgTable("accounts", {
   guild: text().primaryKey().notNull(),
@@ -20,7 +26,18 @@ export const playersTable = pgTable("players", {
   serverId: integer().references(() => serversTable.id),
   uuid: text().primaryKey(),
 
-  name: text(),
+  gamertag: text().unique(),
   isOnline: boolean(),
   lastOnline: text(),
+});
+
+export const profilesTable = pgTable("profiles", {
+  xuid: text().primaryKey(),
+  serverId: integer().references(() => serversTable.id),
+  gamertag: text(),
+
+  level: integer(),
+  characterName: text(),
+  networkAddress: text(),
+  updatedAt: timestamp().defaultNow(),
 });
