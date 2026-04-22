@@ -1,8 +1,8 @@
-import { serversTable } from "../../database/schema";
+import { serversTable } from "../../../database/schema";
 
-import type { InferSelectModel } from "drizzle-orm";
 import type { AxiosInstance } from "axios";
-import type { Entries } from "../../types";
+import type { InferSelectModel } from "drizzle-orm";
+import type { Entries } from "../../../types";
 
 type Server = InferSelectModel<typeof serversTable>;
 type Entry = Entries["data"]["entries"][number];
