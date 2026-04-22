@@ -1,2 +1,3 @@
+source/services/players/process/parse.ts
 node_modules/
-source/config/firebase.json
+.env

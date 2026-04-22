@@ -1,30 +1,52 @@
-import type { ServerInfo } from "./services/global.types";
+import { db } from "./database/client";
+import { eq } from "drizzle-orm";
+import axios from "axios";
 
-import { getGamesave } from "./services/gamesave/getGamesave";
-import { db } from "./config/firebase";
+import Bottleneck from "bottleneck";
+import { accountsTable, serversTable } from "./database/schema";
+import { getPlayers } from "./services/players/getPlayers";
+import { getServers } from "./services/servers/getServers";
+import { getLogs } from "./services/logs/getLogs";
 
 const main = async (): Promise<void> => {
-  const tokenRef = db.collection("accounts");
-  const accountsSnapshot = await tokenRef.get();
+  const accounts = await db.select().from(accountsTable);
 
-  await Promise.all(
-    accountsSnapshot.docs.map(async (doc) => {
-      const serverRef = doc.ref.collection("servers");
-      const serversSnapshot = await serverRef.get();
+  for (const account of accounts) {
+    const limiter = new Bottleneck({
+      maxConcurrent: 3,
+      minTime: 333,
+    });
 
-      const { token } = doc.data() as { token: string };
+    const client = axios.create({
+      baseURL: "https://api.nitrado.net",
+      headers: { Authorization: `Bearer ${account.token}` },
+    });
 
-      await Promise.all(
-        serversSnapshot.docs.map(async (serverDoc) => {
-          const { server_info } = serverDoc.data() as {
-            server_info: ServerInfo;
-          };
+    // prettier-ignore
+    client.delete = limiter.wrap(client.delete.bind(client)) as typeof client.delete;
+    client.post = limiter.wrap(client.post.bind(client)) as typeof client.post;
+    client.get = limiter.wrap(client.get.bind(client)) as typeof client.get;
 
-          await getGamesave({ server_info, token });
-        }),
-      );
-    }),
-  );
+    const servers = await db
+      .select()
+      .from(serversTable)
+      .where(eq(serversTable.guild, account.guild));
+
+    await Promise.all(
+      servers.map(async (server) => {
+        await getPlayers(client, server);
+        await getServers(client, server);
+        await getLogs(client, server);
+      }),
+    );
+  }
+
+  console.log("Data updated successfully");
 };
 
-main();
+const timer = async () => {
+  await main();
+  setTimeout(timer, 60000);
+};
+
+timer();
