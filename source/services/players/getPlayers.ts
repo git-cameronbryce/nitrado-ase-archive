@@ -1,13 +1,15 @@
-import { downloadFileServer } from "./process/download";
-import { copyFileServer } from "./process/copy";
+import { downloadFilePlayer } from "./process/download";
+import { copyFilePlayer } from "./process/copy";
+
 import { serversTable } from "../../database/schema";
 
 import type { Entries } from "../../types";
 import type { AxiosInstance } from "axios";
 import type { InferSelectModel } from "drizzle-orm";
+
 type Server = InferSelectModel<typeof serversTable>;
 
-export const getServers = async (
+export const getPlayers = async (
   client: AxiosInstance,
   server: Pick<Server, "id" | "path">,
 ): Promise<void> => {
@@ -20,15 +22,16 @@ export const getServers = async (
     },
   );
 
+  const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
+
   const entries = data.data.entries
-    .sort((a, b) => b.modified_at - a.modified_at)
-    .filter((entry) => entry.name.endsWith(".ark.gz"))
-    .slice(0, 5);
+    .filter((entry) => entry.name.endsWith(".arkprofile"))
+    .filter((entry) => entry.modified_at >= thirtyDaysAgo);
 
   await Promise.all(
     entries.map(async (entry) => {
-      await copyFileServer(client, server, entry);
-      await downloadFileServer(client, server, entry);
+      await copyFilePlayer(client, server, entry);
+      await downloadFilePlayer(client, server, entry);
     }),
   );
 };

@@ -7,13 +7,12 @@ import type { Entries } from "../../../types";
 type Server = InferSelectModel<typeof serversTable>;
 type Entry = Entries["data"]["entries"][number];
 
-export const copyFileServer = async (
+export const copyFilePlayer = async (
   client: AxiosInstance,
   server: Pick<Server, "id" | "path">,
   entry: Entry,
 ): Promise<void> => {
   const [target, file] = entry.path.split("SavedArks/");
-  console.log(target, file);
 
   const { data } = await client.post(
     `/services/${server.id}/gameservers/file_server/copy`,

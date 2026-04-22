@@ -1,5 +1,4 @@
-import { downloadFileServer } from "./process/download";
-import { copyFileServer } from "./process/copy";
+import { downloadFileLogs } from "./process/download";
 import { serversTable } from "../../database/schema";
 
 import type { Entries } from "../../types";
@@ -7,7 +6,7 @@ import type { AxiosInstance } from "axios";
 import type { InferSelectModel } from "drizzle-orm";
 type Server = InferSelectModel<typeof serversTable>;
 
-export const getServers = async (
+export const getLogs = async (
   client: AxiosInstance,
   server: Pick<Server, "id" | "path">,
 ): Promise<void> => {
@@ -15,20 +14,19 @@ export const getServers = async (
     `/services/${server.id}/gameservers/file_server/list`,
     {
       params: {
-        dir: `${server.path}ShooterGame/Saved/SavedArks`,
+        dir: `${server.path}ShooterGame/Saved/Logs`,
       },
     },
   );
 
   const entries = data.data.entries
     .sort((a, b) => b.modified_at - a.modified_at)
-    .filter((entry) => entry.name.endsWith(".ark.gz"))
+    .filter((entry) => entry.name.startsWith("ShooterGame-backup"))
     .slice(0, 5);
 
   await Promise.all(
     entries.map(async (entry) => {
-      await copyFileServer(client, server, entry);
-      await downloadFileServer(client, server, entry);
+      await downloadFileLogs(client, server, entry);
     }),
   );
 };
