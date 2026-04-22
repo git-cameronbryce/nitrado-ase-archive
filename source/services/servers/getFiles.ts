@@ -1,11 +1,13 @@
 import { InferSelectModel } from "drizzle-orm";
-import { serversTable } from "../database/schema";
-type Server = InferSelectModel<typeof serversTable>;
+import { serversTable } from "../../database/schema";
 
-import { AxiosInstance } from "axios";
-import { Entries } from "../types";
+import { Entries } from "../../types";
 import { copyEntries } from "./process/copy";
 import { downloadEntries } from "./process/download";
+
+import type { AxiosInstance } from "axios";
+
+type Server = InferSelectModel<typeof serversTable>;
 
 export const getFiles = async (
   client: AxiosInstance,
@@ -45,7 +47,6 @@ export const getFiles = async (
           await downloadEntries(client, server, entry);
         }
 
-        return;
         const params = {
           file: entry.path,
         };
