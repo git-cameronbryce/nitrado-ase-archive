@@ -3,10 +3,9 @@ import { eq } from "drizzle-orm";
 import axios from "axios";
 
 import Bottleneck from "bottleneck";
-import { accountsTable, serversTable } from "./database/schema";
+import { getFiles } from "./services/getFile";
 import { getPlayers } from "./services/players/getPlayers";
-import { getServers } from "./services/servers/getServers";
-import { getLogs } from "./services/logs/getLogs";
+import { accountsTable, serversTable } from "./database/schema";
 
 const main = async (): Promise<void> => {
   const accounts = await db.select().from(accountsTable);
@@ -34,9 +33,8 @@ const main = async (): Promise<void> => {
 
     await Promise.all(
       servers.map(async (server) => {
+        await getFiles(client, server);
         await getPlayers(client, server);
-        await getServers(client, server);
-        await getLogs(client, server);
       }),
     );
   }

@@ -1,36 +1,36 @@
-import { serversTable } from "../../../database/schema";
+import { serversTable } from "../../database/schema";
 
 import type { InferSelectModel } from "drizzle-orm";
 import type { AxiosInstance } from "axios";
-import type { Entries } from "../../../types";
+import type { Entries } from "../../types";
 
 type Server = InferSelectModel<typeof serversTable>;
 type Entry = Entries["data"]["entries"][number];
 
-export const downloadFileServer = async (
+export const downloadEntries = async (
   client: AxiosInstance,
-  server: Pick<Server, "id" | "path">,
+  server: Pick<Server, "id">,
   entry: Entry,
-): Promise<void> => {
-  const [target, file] = entry.path.split("SavedArks/");
+) => {
+  const target = entry.path.split("SavedArks/").join("");
 
   const { data } = await client.get(
     `/services/${server.id}/gameservers/file_server/download`,
     {
       params: {
-        file: target + file,
+        file: target,
       },
     },
   );
 
   await client.post(process.env.WORKER_URL!, {
     url: data.data.token.url,
-    key: `backups/${server.id}/${file}`,
+    key: `backups/${server.id}/${entry.name}`,
   });
 
   await client.delete(`/services/${server.id}/gameservers/file_server/delete`, {
     data: {
-      path: target + file,
+      path: target,
     },
   });
 };
